@@ -1,0 +1,27 @@
+{
+  "name": "attendance-logger",
+  "version": "1.0.0",
+  "description": "Automated attendance logging for HUSD ParentVUE",
+  "main": "index.js",
+  "scripts": {
+    "start": "node run.js",
+    "dev": "node --watch run.js",
+    "test": "node test-selectors.js",
+    "basic": "node index.js"
+  },
+  "keywords": [
+    "attendance",
+    "automation",
+    "puppeteer",
+    "school"
+  ],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "puppeteer": "^21.5.2",
+    "dotenv": "^16.3.1"
+  },
+  "devDependencies": {
+    "@types/node": "^20.8.0"
+  }
+}
