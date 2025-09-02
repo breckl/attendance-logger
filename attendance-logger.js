@@ -127,40 +127,73 @@ class EnhancedAttendanceLogger {
 
       this.isLoggedIn = true;
       console.log("✅ Login successful");
+      
+      // Wait a bit longer after login to ensure session is fully established
+      console.log("⏳ Waiting for session to stabilize...");
+      await this.page.waitForTimeout(5000);
     } catch (error) {
       console.error("❌ Login failed:", error);
       throw error;
     }
   }
 
-  async navigateToAttendance() {
-    try {
-      console.log("📊 Navigating to attendance page...");
+  async navigateToAttendance(retries = 2) {
+    for (let attempt = 1; attempt <= retries + 1; attempt++) {
+      try {
+        console.log(`📊 Navigating to attendance page (attempt ${attempt}/${retries + 1})...`);
 
-      // Navigate to attendance page
-      await this.page.goto(config.attendanceUrl, {
-        waitUntil: "networkidle2",
-        timeout: 30000,
-      });
+        // Navigate to attendance page
+        const response = await this.page.goto(config.attendanceUrl, {
+          waitUntil: "networkidle2",
+          timeout: 30000,
+        });
 
-      // Wait for page to load and check if we're still logged in
-      await this.page.waitForTimeout(3000);
+        // Check for 500 error
+        if (response && response.status() === 500) {
+          console.error("❌ Server returned 500 error - Internal Server Error");
+          console.error("💡 This might be caused by an incorrect ATTENDANCE_URL in your .env file");
+          console.error(`   Current URL: ${config.attendanceUrl}`);
+          console.error("   Please verify the URL matches your ParentVUE attendance page");
+          if (attempt <= retries) {
+            console.log(`💡 Retrying in 10 seconds... (${retries - attempt + 1} retries left)`);
+            await this.page.waitForTimeout(10000);
+            continue;
+          } else {
+            throw new Error(`Server returned 500 error after ${retries + 1} attempts. Please check your ATTENDANCE_URL in .env file (ID: FADCD)`);
+          }
+        }
 
-      // Verify we're on the attendance page
-      const pageTitle = await this.page.title();
-      const pageUrl = this.page.url();
+        // Wait for page to load and check if we're still logged in
+        await this.page.waitForTimeout(3000);
 
-      if (
-        !pageUrl.includes("Attendance") &&
-        !pageTitle.toLowerCase().includes("attendance")
-      ) {
-        throw new Error("Failed to reach attendance page");
+        // Check if we got redirected to login page due to expired session
+        const currentUrl = this.page.url();
+        if (currentUrl.includes("Login") || currentUrl.includes("login")) {
+          throw new Error("Redirected to login page - session may have expired");
+        }
+
+        // Verify we're on the attendance page
+        const pageTitle = await this.page.title();
+        const pageUrl = this.page.url();
+
+        if (
+          !pageUrl.includes("Attendance") &&
+          !pageTitle.toLowerCase().includes("attendance")
+        ) {
+          throw new Error("Failed to reach attendance page");
+        }
+
+        console.log("✅ Arrived at attendance page");
+        return; // Success, exit the retry loop
+      } catch (error) {
+        if (attempt <= retries && error.message.includes("500 error")) {
+          console.warn(`⚠️ Attempt ${attempt} failed: ${error.message}`);
+          continue;
+        } else {
+          console.error("❌ Failed to navigate to attendance page:", error);
+          throw error;
+        }
       }
-
-      console.log("✅ Arrived at attendance page");
-    } catch (error) {
-      console.error("❌ Failed to navigate to attendance page:", error);
-      throw error;
     }
   }
 
