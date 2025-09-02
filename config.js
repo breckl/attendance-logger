@@ -1,9 +1,11 @@
 require("dotenv").config();
 
+console.log(process.env.APP_USERNAME)
+
 module.exports = {
   // HUSD ParentVUE Credentials (from environment variables)
-  username: process.env.USERNAME,
-  password: process.env.PASSWORD,
+  username: process.env.APP_USERNAME,
+  password: process.env.APP_PASSWORD,
 
   // URLs (from environment variables)
   loginUrl: process.env.LOGIN_URL,
